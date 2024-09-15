@@ -3,29 +3,34 @@ import { TouchableHighlight } from "react-native-gesture-handler";
 import ContactListItem from "../shared/components/ContactListItem";
 import { useEffect, useState } from "react";
 import { fetchContacts } from "../utils/api";
-export default function Contacts({navigation}:any) {
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchContactFailed,
+  fetchContactsLoading,
+  fetchContactsSuccess,
+} from "../store/CreateStore";
+export default function Contacts({ navigation }: any) {
   //state
-  const [contacts, setContacts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  // const [contacts, setContacts] = useState([]);
+  // const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState(false);
+  const selectContacts: any = useSelector((state: any) => state.contacts);
+  const selectLoading: any = useSelector((state: any) => state.loading);
+  const selectError: any = useSelector((state: any) => state.error);
+  const dispatch = useDispatch();
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true); // Đánh dấu bắt đầu tải dữ liệu
-      try {
-        const data: any = await fetchContacts(); // Gọi hàm và lấy dữ liệu
-        setContacts(data); // Cập nhật danh sách liên hệ
-       
-      } catch (error) {
-        console.log(error)
-        setError(false); // Đặt lỗi nếu có
-      } finally {
-        setLoading(false); // Kết thúc trạng thái tải
-      }
-    };
-    fetchData(); // Gọi hàm bất đồng bộ để tải dữ liệu
+    dispatch(fetchContactsLoading());
+    fetchContacts()
+      .then((contacts: any) => {
+        console.log(contacts);
+        dispatch(fetchContactsSuccess(contacts));
+      })
+      .catch((e: any) => {
+        dispatch(fetchContactFailed());
+      });
   }, []);
   //sort
-  const contactSorted = contacts.sort((a: any, b: any) => {
+  const contactSorted = selectContacts.slice().sort((a: any, b: any) => {
     return a.name.localeCompare(b.name);
   });
   const renderContact = ({ item }: any) => {
@@ -35,7 +40,9 @@ export default function Contacts({navigation}:any) {
         name={name}
         phone={phone}
         avatar={avatar}
-        onPress={() => {navigation.navigate('Profile', {contact: item})}}
+        onPress={() => {
+          navigation.navigate("Profile", { contact: item });
+        }}
       />
     );
   };
@@ -49,9 +56,9 @@ export default function Contacts({navigation}:any) {
         backgroundColor: "white",
       }}
     >
-      {loading && <ActivityIndicator color={"blue"} size="large" />}
-      {error && <Text>Error...</Text>}
-      {!loading && !error && (
+      {selectLoading && <ActivityIndicator color={"blue"} size="large" />}
+      {selectError && <Text>Error...</Text>}
+      {!selectLoading && !selectError && (
         <FlatList
           data={contactSorted}
           renderItem={renderContact}
